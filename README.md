@@ -1,0 +1,178 @@
+Zig Implmentation of the POSIX Shell and Utilities
+
+All operating systems will be supported, but for now just macOS.
+
+The intent is to be exactly POSIX compliant; no more, no less.
+
+TODO:
+- [ ] Tests
+- [ ] Finish utilities
+- [ ] Comply with XBD Utility Syntax
+- [ ] locals / internationalization
+- [ ] Partial compilation
+- [ ] support '--' delimiter
+
+Executables:
+- [ ] admin
+- [ ] alias
+- [ ] ar
+- [ ] asa
+- [ ] at
+- [ ] awk
+- [x] basename
+- [ ] batch
+- [ ] bc
+- [ ] bg
+- [ ] c99
+- [ ] cal
+- [ ] cat
+- [ ] cd
+- [ ] cflow
+- [ ] chgrp
+- [ ] chmod
+- [ ] chown
+- [ ] cksum
+- [ ] cmp
+- [ ] comm
+- [ ] command
+- [ ] compress
+- [ ] cp
+- [ ] crontab
+- [ ] csplit
+- [ ] ctags
+- [ ] cut
+- [ ] cxref
+- [ ] date
+- [ ] dd
+- [ ] delta
+- [ ] df
+- [ ] diff
+- [x] dirname
+- [ ] du
+- [ ] echo
+- [ ] ed
+- [ ] env
+- [ ] ex
+- [ ] expand
+- [ ] expr
+- [x] false
+- [ ] fc
+- [ ] fg
+- [ ] file
+- [ ] find
+- [ ] fold
+- [ ] fort77
+- [ ] fuser
+- [ ] gencat
+- [ ] get
+- [ ] getconf
+- [ ] getopts
+- [ ] grep
+- [ ] hash
+- [ ] head
+- [ ] iconv
+- [ ] id
+- [ ] ipcrm
+- [ ] ipcs
+- [ ] jobs
+- [ ] join
+- [ ] kill
+- [ ] lex
+- [ ] link
+- [ ] ln
+- [ ] locale
+- [ ] localedef
+- [ ] logger
+- [ ] logname
+- [ ] lp
+- [ ] ls
+- [ ] m4
+- [ ] mailx
+- [ ] make
+- [ ] man
+- [ ] mesg
+- [ ] mkdir
+- [ ] mkfifo
+- [ ] more
+- [ ] mv
+- [ ] newgrp
+- [ ] nice
+- [ ] nl
+- [ ] nm
+- [ ] nohup
+- [ ] od
+- [ ] paste
+- [ ] patch
+- [ ] pathchk
+- [ ] pax
+- [ ] pr
+- [ ] printf
+- [ ] prs
+- [ ] ps
+- [-] pwd
+    - [ ] locales
+- [ ] qalter
+- [ ] qdel
+- [ ] qhold
+- [ ] qmove
+- [ ] qmsg
+- [ ] qrerun
+- [ ] qrls
+- [ ] qselect
+- [ ] qsig
+- [ ] qstat
+- [ ] qsub
+- [ ] read
+- [ ] renice
+- [ ] rm
+- [ ] rmdel
+- [ ] rmdir
+- [ ] sact
+- [ ] sccs
+- [ ] sed
+- [ ] sh
+- [ ] sleep
+- [ ] sort
+- [ ] split
+- [ ] strings
+- [ ] strip
+- [ ] stty
+- [ ] tabs
+- [ ] tail
+- [ ] talk
+- [ ] tee
+- [ ] test
+- [ ] time
+- [ ] touch
+- [ ] tput
+- [ ] tr
+- [x] true
+- [ ] tsort
+- [ ] tty
+- [ ] type
+- [ ] ulimit
+- [ ] umask
+- [ ] unalias
+- [ ] uname
+- [ ] uncompress
+- [ ] unexpand
+- [ ] unget
+- [ ] uniq
+- [ ] unlink
+- [ ] uucp
+- [ ] uudecode
+- [ ] uuencode
+- [ ] uustat
+- [ ] uux
+- [ ] val
+- [ ] vi
+- [ ] wait
+- [-] wc
+    - [ ] locals
+    - [ ] 'char' mode
+- [ ] what
+- [ ] who
+- [ ] write
+- [ ] xargs
+- [ ] yacc
+- [ ] zcat
