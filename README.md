@@ -109,7 +109,7 @@ Executables:
 - [ ] printf
 - [ ] prs
 - [ ] ps
-- [-] pwd
+- [x] pwd
     - [ ] locales
 - [ ] qalter
 - [ ] qdel
@@ -167,7 +167,7 @@ Executables:
 - [ ] val
 - [ ] vi
 - [ ] wait
-- [-] wc
+- [x] wc
     - [ ] locals
     - [ ] 'char' mode
 - [ ] what
