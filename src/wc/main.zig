@@ -21,6 +21,13 @@ const BytesMode = enum {
     neither,
 };
 
+const FileContentsInfo = struct {
+    line_count: usize,
+    word_count: usize,
+    byte_count: usize,
+    is_dir: bool = false,
+};
+
 const Args = struct {
     const FileList = std.ArrayList([]const u8);
 
@@ -92,19 +99,27 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
     var sum_bytes: usize = 0;
 
     for (args.files.items) |file| {
-        const lines, const words, const bytes =
-            try fileInfo(file, count_lines or bytes_mode == .chars, count_words, bytes_mode != .neither);
+        const file_contents_info = try fileInfo(file, count_lines or bytes_mode == .chars, count_words, bytes_mode != .neither);
+
+        if (file_contents_info.is_dir) {
+            var bw = std.io.bufferedWriter(std.io.getStdErr().writer());
+            const writer = bw.writer();
+            try writer.print("wc: {s} is a directory\n", .{file});
+            try bw.flush();
+            continue;
+        }
+
         if (count_lines)
-            sum_lines += lines;
+            sum_lines += file_contents_info.line_count;
         if (count_words)
-            sum_words += words;
+            sum_words += file_contents_info.word_count;
         if (bytes_mode != .neither)
-            sum_bytes += bytes;
+            sum_bytes += file_contents_info.byte_count;
 
         try printInfo(
-            if (count_lines) lines else null,
-            if (count_words) words else null,
-            if (bytes_mode != .neither) bytes else null,
+            if (count_lines) file_contents_info.line_count else null,
+            if (count_words) file_contents_info.word_count else null,
+            if (bytes_mode != .neither) file_contents_info.byte_count else null,
             file,
         );
     }
@@ -121,7 +136,7 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
     return 0;
 }
 
-fn fileInfo(filename: []const u8, need_lines: bool, need_words: bool, need_bytes: bool) !struct { usize, usize, usize } {
+fn fileInfo(filename: []const u8, need_lines: bool, need_words: bool, need_bytes: bool) !FileContentsInfo {
     const f: std.fs.File = try (if (filename[0] == '/')
         std.fs.openFileAbsolute(filename, .{})
     else
@@ -141,8 +156,9 @@ fn fileInfo(filename: []const u8, need_lines: bool, need_words: bool, need_bytes
         } else |_| {} // EOF
     }
 
-    const bytes = if (need_bytes) (try f.stat()).size else 0;
-    return .{ lines, words, bytes };
+    const stat = try f.stat();
+    const bytes = if (need_bytes) stat.size else 0;
+    return .{ .line_count = lines, .word_count = words, .byte_count = bytes, .is_dir = stat.kind == .directory };
 }
 
 fn strInfo(str: []const u8) struct { usize, usize } {
