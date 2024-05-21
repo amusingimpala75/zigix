@@ -1,5 +1,7 @@
 Zig Implmentation of the POSIX Shell and Utilities
 
+Licensed under the MIT license; see `LICENSE.md`
+
 All operating systems will be supported, but for now just macOS.
 
 The intent is to be exactly POSIX compliant; no more, no less.
@@ -8,12 +10,11 @@ TODO:
 - [ ] Tests
 - [ ] Finish utilities
 - [ ] Comply with XBD Utility Syntax
+    - [ ] support '--' delimiter
 - [ ] locals / internationalization
 - [ ] Partial compilation
-- [ ] support '--' delimiter
 
 Executables:
-- [ ] admin
 - [ ] alias
 - [ ] ar
 - [ ] asa
@@ -27,7 +28,6 @@ Executables:
 - [ ] cal
 - [ ] cat
 - [ ] cd
-- [ ] cflow
 - [ ] chgrp
 - [ ] chmod
 - [ ] chown
@@ -39,12 +39,9 @@ Executables:
 - [ ] cp
 - [ ] crontab
 - [ ] csplit
-- [ ] ctags
 - [ ] cut
-- [ ] cxref
 - [ ] date
 - [ ] dd
-- [ ] delta
 - [ ] df
 - [ ] diff
 - [x] dirname
@@ -64,7 +61,6 @@ Executables:
 - [ ] fort77
 - [ ] fuser
 - [ ] gencat
-- [ ] get
 - [ ] getconf
 - [ ] getopts
 - [ ] grep
@@ -77,7 +73,6 @@ Executables:
 - [ ] jobs
 - [ ] join
 - [ ] kill
-- [ ] lex
 - [ ] link
 - [ ] ln
 - [ ] locale
@@ -88,7 +83,6 @@ Executables:
 - [ ] ls
 - [ ] m4
 - [ ] mailx
-- [ ] make
 - [ ] man
 - [ ] mesg
 - [ ] mkdir
@@ -98,7 +92,6 @@ Executables:
 - [ ] newgrp
 - [ ] nice
 - [ ] nl
-- [ ] nm
 - [ ] nohup
 - [ ] od
 - [ ] paste
@@ -107,7 +100,6 @@ Executables:
 - [ ] pax
 - [ ] pr
 - [ ] printf
-- [ ] prs
 - [ ] ps
 - [x] pwd
     - [ ] locales
@@ -125,17 +117,13 @@ Executables:
 - [ ] read
 - [ ] renice
 - [ ] rm
-- [ ] rmdel
 - [ ] rmdir
-- [ ] sact
-- [ ] sccs
 - [ ] sed
 - [ ] sh
 - [ ] sleep
 - [ ] sort
 - [ ] split
 - [ ] strings
-- [ ] strip
 - [ ] stty
 - [ ] tabs
 - [ ] tail
@@ -156,7 +144,6 @@ Executables:
 - [ ] uname
 - [ ] uncompress
 - [ ] unexpand
-- [ ] unget
 - [ ] uniq
 - [ ] unlink
 - [ ] uucp
@@ -164,15 +151,32 @@ Executables:
 - [ ] uuencode
 - [ ] uustat
 - [ ] uux
-- [ ] val
 - [ ] vi
 - [ ] wait
 - [x] wc
     - [ ] locals
     - [ ] 'char' mode
-- [ ] what
 - [ ] who
 - [ ] write
 - [ ] xargs
-- [ ] yacc
 - [ ] zcat
+
+Experimental/Development (second stage):
+- [ ] admin
+- [ ] cflow
+- [ ] ctags
+- [ ] cxref
+- [ ] delta
+- [ ] get
+- [ ] lex
+- [ ] make
+- [ ] nm
+- [ ] prs
+- [ ] rmdel
+- [ ] sact
+- [ ] sccs
+- [ ] strip
+- [ ] unget
+- [ ] val
+- [ ] what
+- [ ] yacc
