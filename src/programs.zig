@@ -6,6 +6,7 @@ pub const program_names = [_][]const u8{
     "basename",
     "dirname",
     "false",
+    "head",
     "pwd",
     "true",
     "wc",
@@ -15,6 +16,7 @@ pub const program_imports = [_]type{
     @import("basename/main.zig"),
     @import("dirname/main.zig"),
     @import("false/main.zig"),
+    @import("head/main.zig"),
     @import("pwd/main.zig"),
     @import("true/main.zig"),
     @import("wc/main.zig"),
@@ -27,6 +29,7 @@ pub const program_entrypoints = [_]*const entrypoint{
     &program_imports[3].main,
     &program_imports[4].main,
     &program_imports[5].main,
+    &program_imports[6].main,
 };
 
 comptime {
