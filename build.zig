@@ -43,12 +43,17 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const io_module = b.addModule("io", .{
+        .root_source_file = b.path("src/io.zig"),
+    });
+
     const exe = b.addExecutable(.{
         .name = "zigix",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
+    exe.root_module.addImport("io", io_module);
     const exe_install_step = b.addInstallArtifact(exe, .{});
     b.getInstallStep().dependOn(&exe_install_step.step);
 
@@ -57,12 +62,13 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    exe_unit_tests.root_module.addImport("io", io_module);
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
     // Ensure version being used for tests is also the one we are using
     run_exe_unit_tests.step.dependOn(&exe_install_step.step);
 
-    for (@import("src/programs.zig").program_names) |prog| {
+    for (@import("src/program_names.zig").names) |prog| {
         const step = try ZigixSymlinkStep.init(b, prog);
         step.step.dependOn(&exe_install_step.step);
         b.getInstallStep().dependOn(&step.step);

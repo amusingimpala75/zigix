@@ -1,16 +1,7 @@
 const std = @import("std");
+const program_names = @import("program_names.zig");
 
 const entrypoint = fn (*std.process.ArgIterator, std.mem.Allocator) anyerror!u8;
-
-pub const program_names = [_][]const u8{
-    "basename",
-    "dirname",
-    "false",
-    "head",
-    "pwd",
-    "true",
-    "wc",
-};
 
 pub const program_imports = [_]type{
     @import("basename/main.zig"),
@@ -33,6 +24,6 @@ pub const program_entrypoints = [_]*const entrypoint{
 };
 
 comptime {
-    std.debug.assert(program_names.len == program_entrypoints.len);
-    std.debug.assert(program_names.len == program_imports.len);
+    std.debug.assert(program_names.names.len == program_entrypoints.len);
+    std.debug.assert(program_names.names.len == program_imports.len);
 }
