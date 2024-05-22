@@ -6,6 +6,8 @@
 
 const std = @import("std");
 
+const ArgumentParser = @import("../ArgumentParser.zig");
+
 const arg_help =
     \\-c          Count the bytes in the files
     \\-l          Count the newlines in the files
@@ -35,27 +37,35 @@ const Args = struct {
     w: bool = false,
     cm: BytesMode = .neither,
     files: FileList,
+    parsed_options: ArgumentParser.ParsedOptions,
 
     fn parse(args: *std.process.ArgIterator, allocator: std.mem.Allocator) !Args {
-        var ret: Args = .{ .files = FileList.init(allocator) };
-        while (args.next()) |arg| {
-            if (arg.len >= 2 and arg[0] == '-') {
-                for (arg[1..]) |flag| switch (flag) {
-                    'l' => ret.l = true,
-                    'w' => ret.w = true,
-                    'c' => ret.cm = .bytes,
-                    'm' => ret.cm = .chars,
-                    else => return error.UnrecognizedArg,
-                };
-            } else if (arg.len != 1 or arg[0] != '-') {
-                try ret.files.append(arg);
-            }
-        }
-        return ret;
+        const options = blk: {
+            var option_map: ArgumentParser.OptionMap = .{};
+            option_map.put(ArgumentParser.Option{ .flag = 'c', .excludes = "m" });
+            option_map.put(ArgumentParser.Option{ .flag = 'm', .excludes = "c" });
+            option_map.put(ArgumentParser.Option{ .flag = 'l' });
+            option_map.put(ArgumentParser.Option{ .flag = 'w' });
+            break :blk option_map;
+        };
+        const parsed_options = try ArgumentParser.parse(options, args, allocator);
+
+        return .{
+            .l = parsed_options.flags.get('l').? != null,
+            .w = parsed_options.flags.get('w').? != null,
+            .cm = if (parsed_options.flags.get('m').? != null)
+                .chars
+            else if (parsed_options.flags.get('c').? == null)
+                .neither
+            else
+                .bytes,
+            .files = parsed_options.operands,
+            .parsed_options = parsed_options,
+        };
     }
 
-    fn deinit(self: Args) void {
-        self.files.deinit();
+    fn deinit(self: *Args) void {
+        self.parsed_options.deinit();
     }
 
     fn hasFlags(self: Args) bool {
@@ -64,7 +74,7 @@ const Args = struct {
 };
 
 pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator) !u8 {
-    const args = try Args.parse(argsIterator, allocator);
+    var args = try Args.parse(argsIterator, allocator);
     defer args.deinit();
 
     if (args.cm == .chars) {
@@ -98,14 +108,24 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
     var sum_words: usize = 0;
     var sum_bytes: usize = 0;
 
+    var ret: u8 = 0;
+
     for (args.files.items) |file| {
-        const file_contents_info = try fileInfo(file, count_lines or bytes_mode == .chars, count_words, bytes_mode != .neither);
+        const file_contents_info = fileInfo(file, count_lines or bytes_mode == .chars, count_words, bytes_mode != .neither) catch |err| {
+            var bw = std.io.bufferedWriter(std.io.getStdErr().writer());
+            const writer = bw.writer();
+            try writer.print("wc: error printing {s}: {!}\n", .{ file, err });
+            try bw.flush();
+            ret = 1;
+            continue;
+        };
 
         if (file_contents_info.is_dir) {
             var bw = std.io.bufferedWriter(std.io.getStdErr().writer());
             const writer = bw.writer();
             try writer.print("wc: {s} is a directory\n", .{file});
             try bw.flush();
+            ret = 1;
             continue;
         }
 
@@ -133,7 +153,7 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
         );
     }
 
-    return 0;
+    return ret;
 }
 
 fn fileInfo(filename: []const u8, need_lines: bool, need_words: bool, need_bytes: bool) !FileContentsInfo {

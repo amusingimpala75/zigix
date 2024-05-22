@@ -9,8 +9,6 @@ The intent is to be exactly POSIX compliant; no more, no less.
 TODO:
 - [ ] Tests
 - [ ] Finish utilities
-- [ ] Comply with XBD Utility Syntax
-    - [ ] support '--' delimiter
 - [ ] locals / internationalization
 - [ ] Partial compilation
 
