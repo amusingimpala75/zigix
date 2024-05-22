@@ -7,6 +7,7 @@
 const std = @import("std");
 
 const ArgumentParser = @import("../ArgumentParser.zig");
+const io = @import("io");
 
 const arg_help =
     \\-c          Count the bytes in the files
@@ -112,19 +113,13 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
 
     for (args.files.items) |file| {
         const file_contents_info = fileInfo(file, count_lines or bytes_mode == .chars, count_words, bytes_mode != .neither) catch |err| {
-            var bw = std.io.bufferedWriter(std.io.getStdErr().writer());
-            const writer = bw.writer();
-            try writer.print("wc: error printing {s}: {!}\n", .{ file, err });
-            try bw.flush();
+            try io.stdErrPrint("wc: error printing {s}: {!}\n", .{ file, err });
             ret = 1;
             continue;
         };
 
         if (file_contents_info.is_dir) {
-            var bw = std.io.bufferedWriter(std.io.getStdErr().writer());
-            const writer = bw.writer();
-            try writer.print("wc: {s} is a directory\n", .{file});
-            try bw.flush();
+            try io.stdErrPrint("wc: {s} is a directory\n", .{file});
             ret = 1;
             continue;
         }

@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const programs = @import("programs.zig");
+const program_names = @import("program_names.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -13,8 +14,8 @@ pub fn main() !void {
 
     const prog_name = std.fs.path.basename(args.next().?);
     var found_prog = false;
-    for (0..programs.program_names.len) |idx| {
-        if (std.mem.eql(u8, prog_name, programs.program_names[idx])) {
+    for (0..program_names.names.len) |idx| {
+        if (std.mem.eql(u8, prog_name, program_names.names[idx])) {
             found_prog = true;
             const exit_code = programs.program_entrypoints[idx](&args, allocator) catch |err| exitError(err);
             std.process.exit(exit_code);
