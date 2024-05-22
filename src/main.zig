@@ -14,23 +14,23 @@ pub fn main() !void {
 
     const prog_name = std.fs.path.basename(args.next().?);
     var found_prog = false;
-    for (0..program_names.names.len) |idx| {
-        if (std.mem.eql(u8, prog_name, program_names.names[idx])) {
+    for (program_names.names, programs.program_entrypoints) |name, entrypoint| {
+        if (std.mem.eql(u8, prog_name, name)) {
             found_prog = true;
-            const exit_code = programs.program_entrypoints[idx](&args, allocator) catch |err| exitError(err);
+            const exit_code = entrypoint(&args, allocator) catch |err| exitError(name, err);
             std.process.exit(exit_code);
         }
     }
 
     if (!found_prog) {
-        exitError(error.NoSubProgram);
+        exitError("zigix", error.NoSubProgram);
     }
 }
 
-fn exitError(err: anyerror) noreturn {
+fn exitError(program_name: []const u8, err: anyerror) noreturn {
     var bw = std.io.bufferedWriter(std.io.getStdOut().writer());
     const writer = bw.writer();
-    writer.print("{!}\n", .{err}) catch unreachable;
+    writer.print("{s}: {!}\n", .{ program_name, err }) catch unreachable;
     bw.flush() catch unreachable;
     std.process.exit(1);
 }
