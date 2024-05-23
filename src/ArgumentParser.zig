@@ -40,8 +40,8 @@ pub const OptionMap = struct {
         }
     }
 
-    fn clear(self: *OptionMap, char: u8) void {
-        self.options[char] = null;
+    fn clear(self: *OptionMap, option: u8) void {
+        self.options[option] = null;
     }
 
     // You must make sure that the option exists first
@@ -71,11 +71,11 @@ pub const ParsedOptions = struct {
 
 pub fn parse(options: OptionMap, args: *std.process.ArgIterator, allocator: std.mem.Allocator) !ParsedOptions {
     var ret = ParsedOptions.init(allocator);
-    for (options.options) |option| {
-        if (option) |o| {
-            ret.options.clear(o.flag);
-        }
-    }
+    //for (options.options) |option| {
+    //    if (option) |o| {
+    //        ret.options.clear(o.flag);
+    //    }
+    //}
 
     while (args.next()) |arg| {
         if (std.mem.eql(u8, arg, "--")) {
@@ -89,17 +89,22 @@ pub fn parse(options: OptionMap, args: *std.process.ArgIterator, allocator: std.
             if (!options.contains(char)) {
                 return error.NoSuchOption;
             }
+
             const opt = options.get(char);
+
             for (opt.excludes) |exclude| {
                 ret.options.clear(exclude);
             }
+
             if (opt.argument == .none) {
                 ret.options.put(Option{ .flag = char });
             } else {
                 if (arg.len > 2) {
                     return error.OptionWithArgumentMustBeAlone;
                 }
+
                 const next = args.next() orelse return error.OptionArgumentMissing;
+
                 switch (opt.argument) {
                     .str => |_| ret.options.put(Option{ .flag = char, .argument = .{ .str = next } }),
                     .i32 => |_| ret.options.put(Option{ .flag = char, .argument = .{ .i32 = try std.fmt.parseInt(i32, next, 10) } }),
