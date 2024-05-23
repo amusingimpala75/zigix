@@ -110,7 +110,7 @@ pub fn main(
 }
 
 fn fileInfo(filename: []const u8, more_than_just_bytes: bool) !Count {
-    const f = try fs.openFileMaybeAbsoluteOrStdIn(filename, .{});
+    const f = try fs.openFileOmni(filename, .{});
 
     // Only close the file if it wasn't stdin
     defer {
@@ -134,29 +134,27 @@ fn fileInfo(filename: []const u8, more_than_just_bytes: bool) !Count {
 
     var in_word = false;
 
-    var lines: usize = 0;
-    var words: usize = 0;
-    var bytes: usize = 0;
+    var count: Count = .{};
 
     while (r.readByte()) |byte| {
         if (byte == '\n') {
-            lines += 1;
+            count.line += 1;
         }
 
         if (!in_word and !isWhitespace(byte)) {
-            words += 1;
+            count.word += 1;
             in_word = true;
         } else if (in_word and isWhitespace(byte)) {
             in_word = false;
         }
 
-        bytes += 1;
+        count.byte += 1;
     } else |err| switch (err) {
         error.EndOfStream => {}, // We don't care if EOF, just terminate
         else => |e| return e,
     }
 
-    return .{ .line = lines, .word = words, .byte = bytes };
+    return count;
 }
 
 fn isWhitespace(c: u8) bool {
