@@ -8,15 +8,7 @@ const std = @import("std");
 
 const ArgumentParser = @import("../ArgumentParser.zig");
 const io = @import("io");
-
-const arg_help =
-    \\-c          Count the bytes in the files
-    \\-l          Count the newlines in the files
-    \\-m          Count the characters in the files
-    \\-w          Count the words in the files
-    \\<str>...    The files to be counted
-    \\
-;
+const fs = @import("fs");
 
 const BytesMode = enum {
     bytes,
@@ -43,20 +35,18 @@ const Args = struct {
     fn parse(args: *std.process.ArgIterator, allocator: std.mem.Allocator) !Args {
         const options = blk: {
             var option_map: ArgumentParser.OptionMap = .{};
-            option_map.put(ArgumentParser.Option{ .flag = 'c', .excludes = "m" });
-            option_map.put(ArgumentParser.Option{ .flag = 'm', .excludes = "c" });
-            option_map.put(ArgumentParser.Option{ .flag = 'l' });
-            option_map.put(ArgumentParser.Option{ .flag = 'w' });
+            option_map.putAllNoArgument("lw");
+            option_map.putAllMutex("cm");
             break :blk option_map;
         };
         const parsed_options = try ArgumentParser.parse(options, args, allocator);
 
         return .{
-            .l = parsed_options.flags.get('l').? != null,
-            .w = parsed_options.flags.get('w').? != null,
-            .cm = if (parsed_options.flags.get('m').? != null)
+            .l = parsed_options.options.contains('l'),
+            .w = parsed_options.options.contains('w'),
+            .cm = if (parsed_options.options.contains('m'))
                 .chars
-            else if (parsed_options.flags.get('c').? == null)
+            else if (parsed_options.options.contains('c'))
                 .neither
             else
                 .bytes,
@@ -152,10 +142,7 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
 }
 
 fn fileInfo(filename: []const u8, need_lines: bool, need_words: bool, need_bytes: bool) !FileContentsInfo {
-    const f: std.fs.File = try (if (filename[0] == '/')
-        std.fs.openFileAbsolute(filename, .{})
-    else
-        std.fs.cwd().openFile(filename, .{}));
+    const f = try fs.openFileMaybeAbsolute(filename, .{});
     defer f.close();
 
     var lines: usize = 0;

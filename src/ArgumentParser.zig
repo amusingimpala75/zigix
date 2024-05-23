@@ -27,6 +27,19 @@ pub const OptionMap = struct {
         self.options[option.flag] = option;
     }
 
+    pub fn putAllNoArgument(self: *OptionMap, options: []const u8) void {
+        for (options) |option| {
+            self.put(Option{ .flag = option });
+        }
+    }
+
+    pub fn putAllMutex(self: *OptionMap, comptime options: []const u8) void {
+        inline for (options, 0..) |option, idx| {
+            const excluded = options[0..idx] ++ if (idx + 1 >= options.len) "" else options[idx + 1 ..];
+            self.put(Option{ .flag = option, .excludes = excluded });
+        }
+    }
+
     fn clear(self: *OptionMap, char: u8) void {
         self.options[char] = null;
     }
@@ -36,24 +49,22 @@ pub const OptionMap = struct {
         return self.options[char].?;
     }
 
-    fn contains(self: OptionMap, option: u8) bool {
+    pub fn contains(self: OptionMap, option: u8) bool {
         return self.options[option] != null;
     }
 };
 
-pub const FlagMap = std.AutoHashMap(u8, ?Option.Argument);
 pub const Operands = std.ArrayList([]const u8);
 
 pub const ParsedOptions = struct {
-    flags: FlagMap,
+    options: OptionMap,
     operands: Operands,
 
     fn init(allocator: std.mem.Allocator) ParsedOptions {
-        return .{ .flags = FlagMap.init(allocator), .operands = Operands.init(allocator) };
+        return .{ .options = OptionMap{}, .operands = Operands.init(allocator) };
     }
 
     pub fn deinit(self: *ParsedOptions) void {
-        self.flags.deinit();
         self.operands.deinit();
     }
 };
@@ -62,7 +73,7 @@ pub fn parse(options: OptionMap, args: *std.process.ArgIterator, allocator: std.
     var ret = ParsedOptions.init(allocator);
     for (options.options) |option| {
         if (option) |o| {
-            try ret.flags.put(o.flag, null);
+            ret.options.clear(o.flag);
         }
     }
 
@@ -80,18 +91,18 @@ pub fn parse(options: OptionMap, args: *std.process.ArgIterator, allocator: std.
             }
             const opt = options.get(char);
             for (opt.excludes) |exclude| {
-                try ret.flags.put(exclude, null);
+                ret.options.clear(exclude);
             }
             if (opt.argument == .none) {
-                try ret.flags.put(char, .none);
+                ret.options.put(Option{ .flag = char });
             } else {
                 if (arg.len > 2) {
                     return error.OptionWithArgumentMustBeAlone;
                 }
                 const next = args.next() orelse return error.OptionArgumentMissing;
                 switch (opt.argument) {
-                    .str => |_| try ret.flags.put(char, .{ .str = next }),
-                    .i32 => |_| try ret.flags.put(char, .{ .i32 = try std.fmt.parseInt(i32, next, 10) }),
+                    .str => |_| ret.options.put(Option{ .flag = char, .argument = .{ .str = next } }),
+                    .i32 => |_| ret.options.put(Option{ .flag = char, .argument = .{ .i32 = try std.fmt.parseInt(i32, next, 10) } }),
                     else => unreachable,
                 }
             }
