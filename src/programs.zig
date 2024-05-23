@@ -1,7 +1,10 @@
 const std = @import("std");
 const program_names = @import("program_names.zig");
 
-const entrypoint = fn (*std.process.ArgIterator, std.mem.Allocator) anyerror!u8;
+const entrypoint = fn (
+    *std.process.ArgIterator,
+    std.mem.Allocator,
+) anyerror!u8;
 
 const program_imports = [_]type{
     @import("basename/main.zig"),
@@ -15,7 +18,9 @@ const program_imports = [_]type{
 
 pub const program_entrypoints = acquireEntrypoints(&program_imports);
 
-fn acquireEntrypoints(comptime imports: []const type) [imports.len]*const entrypoint {
+fn acquireEntrypoints(
+    comptime imports: []const type,
+) [imports.len]*const entrypoint {
     comptime {
         var entrypoints: [imports.len]*const entrypoint = undefined;
         for (imports, 0..) |import, idx| {

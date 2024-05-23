@@ -14,10 +14,15 @@ pub fn main() !void {
 
     const prog_name = std.fs.path.basename(args.next().?);
     var found_prog = false;
-    for (program_names.names, programs.program_entrypoints) |name, entrypoint| {
+    for (
+        program_names.names,
+        programs.program_entrypoints,
+    ) |name, entrypoint| {
         if (std.mem.eql(u8, prog_name, name)) {
             found_prog = true;
-            const exit_code = entrypoint(&args, allocator) catch |err| exitError(name, err);
+            const exit_code = entrypoint(&args, allocator) catch |err| {
+                exitError(name, err);
+            };
             std.process.exit(exit_code);
         }
     }

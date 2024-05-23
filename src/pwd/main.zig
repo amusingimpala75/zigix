@@ -44,7 +44,9 @@ fn lPrint(allocator: std.mem.Allocator, cwd: []const u8) !void {
 
     var i: usize = 0;
     while (i < pwd_env.len) : (i += 1) {
-        if (pwd_env[i] == '/' and i + 1 < pwd_env.len and pwd_env[i + 1] == '.') {
+        if (pwd_env[i] == '/' and
+            i + 1 < pwd_env.len and pwd_env[i + 1] == '.')
+        {
             // Check for just that '.'
             if (i + 2 >= pwd_env.len or pwd_env[i + 2] == '/') {
                 try pPrint(cwd);
@@ -60,7 +62,10 @@ fn lPrint(allocator: std.mem.Allocator, cwd: []const u8) !void {
         }
     }
 
-    const pwd_dir = try std.fs.openDirAbsolute(pwd_env, .{ .access_sub_paths = false });
+    const pwd_dir = try std.fs.openDirAbsolute(
+        pwd_env,
+        .{ .access_sub_paths = false },
+    );
     var buf_pwd: [std.fs.max_path_bytes]u8 = undefined;
     const pwd_env_expanded = try pwd_dir.realpath(".", &buf_pwd);
 

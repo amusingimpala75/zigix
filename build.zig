@@ -6,13 +6,27 @@ const ZigixSymlinkStep = struct {
 
     fn makeFn(step: *std.Build.Step, _: *std.Progress.Node) anyerror!void {
         const b = step.owner;
-        const symlink_step: *ZigixSymlinkStep = @fieldParentPtr("step", step);
-        const zigix_abspath = try std.fmt.allocPrint(b.allocator, "{s}/bin/zigix", .{b.install_prefix});
+        const symlink_step: *ZigixSymlinkStep = @fieldParentPtr(
+            "step",
+            step,
+        );
+        const zigix_abspath = try std.fmt.allocPrint(
+            b.allocator,
+            "{s}/bin/zigix",
+            .{b.install_prefix},
+        );
         defer b.allocator.free(zigix_abspath);
-        const util_abspath = try std.fmt.allocPrint(b.allocator, "{s}/bin/{s}", .{ b.install_prefix, symlink_step.name });
+        const util_abspath = try std.fmt.allocPrint(
+            b.allocator,
+            "{s}/bin/{s}",
+            .{ b.install_prefix, symlink_step.name },
+        );
         defer b.allocator.free(util_abspath);
         const already_exists = blk: {
-            std.fs.accessAbsolute(util_abspath, .{}) catch |err| switch (err) {
+            std.fs.accessAbsolute(
+                util_abspath,
+                .{},
+            ) catch |err| switch (err) {
                 error.FileNotFound => break :blk false,
                 else => return err,
             };
@@ -25,7 +39,8 @@ const ZigixSymlinkStep = struct {
     }
 
     fn init(b: *std.Build, name: []const u8) !*ZigixSymlinkStep {
-        const step: *ZigixSymlinkStep = try b.allocator.create(ZigixSymlinkStep);
+        const step: *ZigixSymlinkStep =
+            try b.allocator.create(ZigixSymlinkStep);
         step.* = .{
             .name = name,
             .step = std.Build.Step.init(.{

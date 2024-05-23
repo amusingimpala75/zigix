@@ -1,0 +1,1 @@
+- 80-char line width max, non-negotiable

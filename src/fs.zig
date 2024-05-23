@@ -1,6 +1,9 @@
 const std = @import("std");
 
-pub fn openFileMaybeAbsoluteOrStdIn(pathname: []const u8, flags: std.fs.File.OpenFlags) !std.fs.File {
+pub fn openFileMaybeAbsoluteOrStdIn(
+    pathname: []const u8,
+    flags: std.fs.File.OpenFlags,
+) !std.fs.File {
     if (std.mem.eql(u8, "-", pathname)) {
         return std.io.getStdIn();
     }

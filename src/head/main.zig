@@ -6,11 +6,16 @@ const Args = struct {
     count: usize = 10,
     files: FileList,
 
-    fn init(args: *std.process.ArgIterator, allocator: std.mem.Allocator) !Args {
+    fn init(
+        args: *std.process.ArgIterator,
+        allocator: std.mem.Allocator,
+    ) !Args {
         var ret: Args = .{ .files = FileList.init(allocator) };
         while (args.next()) |arg| {
             if (std.mem.eql(u8, arg, "-n")) {
-                ret.count = try std.fmt.parseInt(usize, args.next() orelse return error.MissingOptionArg, 10);
+                const option_arg =
+                    args.next() orelse return error.MissingOptionArg;
+                ret.count = try std.fmt.parseInt(usize, option_arg, 10);
             } else {
                 try ret.files.append(arg);
             }
@@ -45,7 +50,10 @@ pub fn main(args: *std.process.ArgIterator, allocator: std.mem.Allocator) !u8 {
             try bw.flush();
         }
         const is_stdin = std.mem.eql(u8, "-", filename);
-        const file: ?std.fs.File = if (is_stdin) null else try openFileAbsoluteUnknown(filename);
+        const file: ?std.fs.File = if (is_stdin)
+            null
+        else
+            try openFileAbsoluteUnknown(filename);
         defer {
             if (file) |f| {
                 f.close();

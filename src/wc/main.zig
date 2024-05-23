@@ -99,17 +99,11 @@ pub fn main(
         else
             file;
 
-        try printInfo(
-            display_mode,
-            count.line,
-            count.word,
-            count.byte,
-            display_name,
-        );
+        try printInfo(display_mode, count, display_name);
     }
 
     if (parsed_options.operands.items.len > 1) {
-        try printInfo(display_mode, sum.line, sum.word, sum.byte, "total");
+        try printInfo(display_mode, sum, "total");
     }
 
     return ret;

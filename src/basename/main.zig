@@ -24,7 +24,9 @@ fn process(string: []const u8, suffix: ?[]const u8) []const u8 {
     const basename = std.fs.path.basename(string);
 
     if (suffix) |suf| {
-        if (basename.len > suf.len and std.mem.eql(u8, basename[basename.len - suf.len ..], suf)) {
+        if (basename.len > suf.len and
+            std.mem.eql(u8, basename[basename.len - suf.len ..], suf))
+        {
             return basename[0 .. basename.len - suf.len];
         } else {
             return basename;
@@ -39,32 +41,80 @@ test "null string" {
 }
 
 test "only slashes" {
-    try std.testing.expectEqualSlices(u8, "/", process("////////////////////////////", null));
+    try std.testing.expectEqualSlices(
+        u8,
+        "/",
+        process("////////////////////////////", null),
+    );
 }
 
 test {
     // absolute path
-    try std.testing.expectEqualSlices(u8, "foo", process("/bar/baz/foo", null));
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("/bar/baz/foo", null),
+    );
     // relative path
-    try std.testing.expectEqualSlices(u8, "foo", process("bar/baz/foo", null));
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("bar/baz/foo", null),
+    );
     // single entry, relative
-    try std.testing.expectEqualSlices(u8, "foo", process("foo", null));
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("foo", null),
+    );
     // single entry, absolute
-    try std.testing.expectEqualSlices(u8, "foo", process("/foo", null));
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("/foo", null),
+    );
     // relative, with extension
-    try std.testing.expectEqualSlices(u8, "main.zig", process("src/main.zig", null));
+    try std.testing.expectEqualSlices(
+        u8,
+        "main.zig",
+        process("src/main.zig", null),
+    );
 }
 
 test "trailing slashes" {
-    try std.testing.expectEqualSlices(u8, "foo", process("/bar/baz/foo/", null));
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("/bar/baz/foo/", null),
+    );
 }
 
 test "suffix removal" {
-    try std.testing.expectEqualSlices(u8, "foo", process("foo.txt", ".txt"));
-    try std.testing.expectEqualSlices(u8, "foo.txt", process("foo.txt", "foo"));
-    try std.testing.expectEqualSlices(u8, "foo", process("/bar/foo.txt", ".txt"));
-    try std.testing.expectEqualSlices(u8, "foo", process("bar/foo.txt", ".txt"));
-    try std.testing.expectEqualSlices(u8, "foo", process("/bar/baz/foo", ""));
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("foo.txt", ".txt"),
+    );
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo.txt",
+        process("foo.txt", "foo"),
+    );
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("/bar/foo.txt", ".txt"),
+    );
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("bar/foo.txt", ".txt"),
+    );
+    try std.testing.expectEqualSlices(
+        u8,
+        "foo",
+        process("/bar/baz/foo", ""),
+    );
 }
 
 fn output(str: []const u8) !void {
