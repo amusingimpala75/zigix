@@ -7,6 +7,7 @@
 const std = @import("std");
 
 const ArgumentParser = @import("../ArgumentParser.zig");
+
 const io = @import("io");
 const fs = @import("fs");
 
@@ -16,6 +17,18 @@ const BytesMode = enum {
     neither,
 };
 
+const DisplayMode = struct {
+    show_line_count: bool,
+    show_word_count: bool,
+    show_byte_count: bool,
+};
+
+const Count = struct {
+    line: usize = 0,
+    word: usize = 0,
+    byte: usize = 0,
+};
+
 const options = blk: {
     var option_map: ArgumentParser.OptionMap = .{};
     option_map.putAllNoArgument("lw");
@@ -23,103 +36,106 @@ const options = blk: {
     break :blk option_map;
 };
 
-pub fn main(args: *std.process.ArgIterator, allocator: std.mem.Allocator) !u8 {
-    const parsed_options = try ArgumentParser.parse(options, args, allocator);
+pub fn main(
+    args: *std.process.ArgIterator,
+    allocator: std.mem.Allocator,
+) !u8 {
+    const parsed_options = blk: {
+        var parsed = try ArgumentParser.parse(options, args, allocator);
+        if (parsed.operands.items.len == 0) {
+            try parsed.operands.append("-");
+        }
+        break :blk parsed;
+    };
     defer parsed_options.deinit();
-
-    const no_flags = parsed_options.options.empty();
-
-    const count_lines = no_flags or parsed_options.options.contains('l');
-    const count_words = no_flags or parsed_options.options.contains('w');
-    const bytes_mode: BytesMode = if (no_flags or parsed_options.options.contains('c'))
-        .bytes
-    else if (parsed_options.options.contains('m'))
-        return error.UnsupportedOperation
-    else
-        .neither;
-
-    if (parsed_options.operands.items.len == 0) {
-        const lines, const words, const bytes = try stdinInfo(count_lines or count_words);
-
-        try printInfo(
-            if (count_lines) lines else null,
-            if (count_words) words else null,
-            if (bytes_mode != .neither) bytes else null,
-            "",
-        );
-
-        return 0;
-    }
-
-    var sum_lines: usize = 0;
-    var sum_words: usize = 0;
-    var sum_bytes: usize = 0;
 
     var ret: u8 = 0;
 
-    // TODO: Support for '-' file as stdin
+    const no_flags = parsed_options.options.isEmpty();
+
+    const bytes_mode: BytesMode = blk: {
+        break :blk if (no_flags or parsed_options.options.contains('c'))
+            .bytes
+        else if (parsed_options.options.contains('m'))
+            return error.UnsupportedOperation
+        else
+            .neither;
+    };
+
+    const display_mode: DisplayMode = .{
+        .show_line_count = no_flags or parsed_options.options.contains('l'),
+        .show_word_count = no_flags or parsed_options.options.contains('w'),
+        .show_byte_count = bytes_mode != .neither,
+    };
+
+    const scan_manually =
+        display_mode.show_line_count or display_mode.show_word_count;
+
+    var sum: Count = .{};
+
     for (parsed_options.operands.items) |file| {
-        const line_count, const word_count, const byte_count = fileInfo(file, count_lines or count_words) catch |err| {
+        const count = fileInfo(file, scan_manually) catch |err| {
             switch (err) {
-                error.IsADirectory => try io.stdErrPrint("wc: {s} is a directory\n", .{file}),
-                else => try io.stdErrPrint("wc: error printing {s}: {!}\n", .{ file, err }),
+                error.IsADirectory => try io.stdErrPrint(
+                    "wc: {s} is a directory\n",
+                    .{file},
+                ),
+                else => try io.stdErrPrint(
+                    "wc: error printing {s}: {!}\n",
+                    .{ file, err },
+                ),
             }
             ret = 1;
             continue;
         };
 
-        sum_lines += line_count;
-        sum_words += word_count;
-        sum_bytes += byte_count;
+        sum.line += count.line;
+        sum.word += count.word;
+        sum.byte += count.byte;
+
+        // show nothing if reading from stdin
+        const display_name = if (std.mem.eql(u8, "-", file))
+            ""
+        else
+            file;
 
         try printInfo(
-            if (count_lines) line_count else null,
-            if (count_words) word_count else null,
-            if (bytes_mode != .neither) byte_count else null,
-            file,
+            display_mode,
+            count.line,
+            count.word,
+            count.byte,
+            display_name,
         );
     }
 
     if (parsed_options.operands.items.len > 1) {
-        try printInfo(
-            if (count_lines) sum_lines else null,
-            if (count_words) sum_words else null,
-            if (bytes_mode != .neither) sum_bytes else null,
-            "total",
-        );
+        try printInfo(display_mode, sum.line, sum.word, sum.byte, "total");
     }
 
     return ret;
 }
 
-fn fileInfo(filename: []const u8, more_than_just_bytes: bool) !struct { usize, usize, usize } {
-    const f = try fs.openFileMaybeAbsolute(filename, .{});
-    defer f.close();
+fn fileInfo(filename: []const u8, more_than_just_bytes: bool) !Count {
+    const f = try fs.openFileMaybeAbsoluteOrStdIn(filename, .{});
+
+    // Only close the file if it wasn't stdin
+    defer {
+        if (!std.mem.eql(u8, "-", filename)) {
+            f.close();
+        }
+    }
 
     const stat = try f.stat();
+
     if (stat.kind == .directory) {
         return error.IsADirectory;
     }
 
-    if (more_than_just_bytes) {
-        return try readerInfo(f.reader());
+    if (!more_than_just_bytes) {
+        return .{ .byte = stat.size };
     }
 
-    return .{ 0, 0, stat.size };
-}
-
-fn stdinInfo(more_than_just_bytes: bool) !struct { usize, usize, usize } {
-    const stdin = std.io.getStdIn();
-
-    if (more_than_just_bytes) {
-        return try readerInfo(stdin.reader());
-    } else {
-        return .{ 0, 0, (try stdin.stat()).size };
-    }
-}
-
-fn readerInfo(reader: anytype) !struct { usize, usize, usize } {
-    var br = std.io.bufferedReader(reader);
+    var br = std.io.bufferedReader(f.reader());
     const r = br.reader();
 
     var in_word = false;
@@ -129,26 +145,24 @@ fn readerInfo(reader: anytype) !struct { usize, usize, usize } {
     var bytes: usize = 0;
 
     while (r.readByte()) |byte| {
-        byteScan(byte, &lines, &words, &in_word);
+        if (byte == '\n') {
+            lines += 1;
+        }
+
+        if (!in_word and !isWhitespace(byte)) {
+            words += 1;
+            in_word = true;
+        } else if (in_word and isWhitespace(byte)) {
+            in_word = false;
+        }
+
         bytes += 1;
     } else |err| switch (err) {
-        error.EndOfStream => {},
+        error.EndOfStream => {}, // We don't care if EOF, just terminate
         else => |e| return e,
     }
 
-    return .{ lines, words, bytes };
-}
-
-fn byteScan(byte: u8, lines_counter: *usize, words_counter: *usize, in_word: *bool) void {
-    if (byte == '\n') {
-        lines_counter.* += 1;
-    }
-    if (!in_word.* and !isWhitespace(byte)) {
-        words_counter.* += 1;
-        in_word.* = true;
-    } else if (in_word.* and isWhitespace(byte)) {
-        in_word.* = false;
-    }
+    return .{ .line = lines, .word = words, .byte = bytes };
 }
 
 fn isWhitespace(c: u8) bool {
@@ -165,18 +179,22 @@ fn isWhitespace(c: u8) bool {
 }
 
 // TODO dynamically adjust the size of the padding
-fn printInfo(count_lines: ?usize, count_words: ?usize, count_bytes: ?usize, filename: []const u8) !void {
+fn printInfo(
+    display_mode: DisplayMode,
+    count: Count,
+    filename: []const u8,
+) !void {
     var bw = std.io.bufferedWriter(std.io.getStdOut().writer());
     const writer = bw.writer();
 
-    if (count_lines) |count| {
-        try writer.print("{: >8} ", .{count});
+    if (display_mode.show_line_count) {
+        try writer.print("{: >8} ", .{count.line});
     }
-    if (count_words) |count| {
-        try writer.print("{: >8} ", .{count});
+    if (display_mode.show_word_count) {
+        try writer.print("{: >8} ", .{count.word});
     }
-    if (count_bytes) |count| {
-        try writer.print("{: >8} ", .{count});
+    if (display_mode.show_byte_count) {
+        try writer.print("{: >8} ", .{count.byte});
     }
     try writer.print("{s: <}\n", .{filename});
     try bw.flush();

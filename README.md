@@ -11,6 +11,7 @@ TODO:
 - [ ] Finish utilities
 - [ ] locals / internationalization
 - [ ] Partial compilation
+- [ ] Style guide and conform to it
 
 Executables:
 - [ ] alias
@@ -63,7 +64,7 @@ Executables:
 - [ ] getopts
 - [ ] grep
 - [ ] hash
-- [ ] head
+- [x] head
 - [ ] iconv
 - [ ] id
 - [ ] ipcrm

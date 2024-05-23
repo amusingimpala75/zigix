@@ -53,7 +53,7 @@ pub const OptionMap = struct {
         return self.options[option] != null;
     }
 
-    pub fn empty(self: OptionMap) bool {
+    pub fn isEmpty(self: OptionMap) bool {
         for (self.options) |option| {
             if (option != null) {
                 return false;
