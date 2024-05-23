@@ -16,60 +16,29 @@ const BytesMode = enum {
     neither,
 };
 
-const Args = struct {
-    const FileList = std.ArrayList([]const u8);
-
-    l: bool = false,
-    w: bool = false,
-    cm: BytesMode = .neither,
-    files: FileList,
-    parsed_options: ArgumentParser.ParsedOptions,
-
-    fn parse(args: *std.process.ArgIterator, allocator: std.mem.Allocator) !Args {
-        const options = blk: {
-            var option_map: ArgumentParser.OptionMap = .{};
-            option_map.putAllNoArgument("lw");
-            option_map.putAllMutex("cm");
-            break :blk option_map;
-        };
-        const parsed_options = try ArgumentParser.parse(options, args, allocator);
-
-        return .{
-            .l = parsed_options.options.contains('l'),
-            .w = parsed_options.options.contains('w'),
-            .cm = if (parsed_options.options.contains('m'))
-                .chars
-            else if (!parsed_options.options.contains('c'))
-                .neither
-            else
-                .bytes,
-            .files = parsed_options.operands,
-            .parsed_options = parsed_options,
-        };
-    }
-
-    fn deinit(self: *Args) void {
-        self.parsed_options.deinit();
-    }
-
-    fn hasFlags(self: Args) bool {
-        return self.l == true or self.w == true or self.cm != .neither;
-    }
+const options = blk: {
+    var option_map: ArgumentParser.OptionMap = .{};
+    option_map.putAllNoArgument("lw");
+    option_map.putAllMutex("cm");
+    break :blk option_map;
 };
 
-pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator) !u8 {
-    var args = try Args.parse(argsIterator, allocator);
-    defer args.deinit();
+pub fn main(args: *std.process.ArgIterator, allocator: std.mem.Allocator) !u8 {
+    const parsed_options = try ArgumentParser.parse(options, args, allocator);
+    defer parsed_options.deinit();
 
-    if (args.cm == .chars) {
-        return error.UnsupportedOperation;
-    }
+    const no_flags = parsed_options.options.empty();
 
-    const count_lines = !args.hasFlags() or args.l;
-    const count_words = !args.hasFlags() or args.w;
-    const bytes_mode = if (!args.hasFlags() and args.cm == .neither) .bytes else args.cm;
+    const count_lines = no_flags or parsed_options.options.contains('l');
+    const count_words = no_flags or parsed_options.options.contains('w');
+    const bytes_mode: BytesMode = if (no_flags or parsed_options.options.contains('c'))
+        .bytes
+    else if (parsed_options.options.contains('m'))
+        return error.UnsupportedOperation
+    else
+        .neither;
 
-    if (args.files.items.len == 0) {
+    if (parsed_options.operands.items.len == 0) {
         const lines, const words, const bytes = try stdinInfo(count_lines or count_words);
 
         try printInfo(
@@ -88,7 +57,8 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
 
     var ret: u8 = 0;
 
-    for (args.files.items) |file| {
+    // TODO: Support for '-' file as stdin
+    for (parsed_options.operands.items) |file| {
         const line_count, const word_count, const byte_count = fileInfo(file, count_lines or count_words) catch |err| {
             switch (err) {
                 error.IsADirectory => try io.stdErrPrint("wc: {s} is a directory\n", .{file}),
@@ -110,7 +80,7 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
         );
     }
 
-    if (args.files.items.len > 1) {
+    if (parsed_options.operands.items.len > 1) {
         try printInfo(
             if (count_lines) sum_lines else null,
             if (count_words) sum_words else null,

@@ -52,6 +52,15 @@ pub const OptionMap = struct {
     pub fn contains(self: OptionMap, option: u8) bool {
         return self.options[option] != null;
     }
+
+    pub fn empty(self: OptionMap) bool {
+        for (self.options) |option| {
+            if (option != null) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 pub const Operands = std.ArrayList([]const u8);
@@ -64,7 +73,7 @@ pub const ParsedOptions = struct {
         return .{ .options = OptionMap{}, .operands = Operands.init(allocator) };
     }
 
-    pub fn deinit(self: *ParsedOptions) void {
+    pub fn deinit(self: ParsedOptions) void {
         self.operands.deinit();
     }
 };
