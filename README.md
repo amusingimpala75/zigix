@@ -12,6 +12,7 @@ TODO:
 - [ ] locals / internationalization
 - [ ] Partial compilation
 - [ ] Style guide and conform to it
+- [ ] Man pages
 
 Executables:
 - [ ] alias

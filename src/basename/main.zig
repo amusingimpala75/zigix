@@ -1,7 +1,9 @@
 const std = @import("std");
 
+const io = @import("io");
+
 pub fn main(args: *std.process.ArgIterator, _: std.mem.Allocator) !u8 {
-    try output(process(args.next().?, args.next()));
+    try io.stdOutPrint("{s}\n", .{process(args.next().?, args.next())});
     return 0;
 }
 
@@ -115,11 +117,4 @@ test "suffix removal" {
         "foo",
         process("/bar/baz/foo", ""),
     );
-}
-
-fn output(str: []const u8) !void {
-    var bw = std.io.bufferedWriter(std.io.getStdOut().writer());
-    const writer = bw.writer();
-    try writer.print("{s}\n", .{str});
-    try bw.flush();
 }

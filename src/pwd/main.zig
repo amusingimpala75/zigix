@@ -1,31 +1,23 @@
 const std = @import("std");
 
-const Flags = enum {
-    L,
-    P,
+const io = @import("io");
 
-    fn parse(args: *std.process.ArgIterator) !Flags {
-        var ret: Flags = .L;
-        while (args.next()) |arg| {
-            if (arg.len >= 2 and arg[0] == '-') {
-                for (arg[1..]) |char| switch (char) {
-                    'L' => ret = .L,
-                    'P' => ret = .P,
-                    else => return error.InvalidArg,
-                };
-            }
-        }
-        return ret;
-    }
+const ArgumentParser = @import("../ArgumentParser.zig");
+
+const options = blk: {
+    var option_map: ArgumentParser.OptionMap = .{};
+    option_map.putAllMutex("LP");
+    break :blk option_map;
 };
 
 pub fn main(args: *std.process.ArgIterator, allocator: std.mem.Allocator) !u8 {
-    const mode = try Flags.parse(args);
+    const parsed = try ArgumentParser.parse(options, args, allocator);
+    defer parsed.deinit();
 
     var buf: [std.fs.max_path_bytes]u8 = undefined;
     const cwd = try std.fs.cwd().realpath(".", &buf);
 
-    if (mode == .L) {
+    if (parsed.options.contains('L')) {
         try lPrint(allocator, cwd);
     } else {
         try pPrint(cwd);
@@ -74,16 +66,9 @@ fn lPrint(allocator: std.mem.Allocator, cwd: []const u8) !void {
         return;
     }
 
-    try printVal(pwd_env_expanded);
+    try io.stdOutPrint("{s}\n", .{pwd_env_expanded});
 }
 
 fn pPrint(cwd: []const u8) !void {
-    try printVal(cwd);
-}
-
-fn printVal(dir: []const u8) !void {
-    var bw = std.io.bufferedWriter(std.io.getStdOut().writer());
-    const writer = bw.writer();
-    try writer.print("{s}\n", .{dir});
-    try bw.flush();
+    try io.stdOutPrint("{s}\n", .{cwd});
 }

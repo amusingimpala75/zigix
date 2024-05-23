@@ -7,15 +7,15 @@ pub const Option = struct {
 
     pub const Argument = union(enum) {
         str: []const u8,
-        i32: i32,
+        usize: usize,
         none,
 
-        fn str() Argument {
+        pub fn str() Argument {
             return .{ .str = "" };
         }
 
-        fn @"i32"() Argument {
-            return .{ .i32 = 0 };
+        pub fn @"usize"() Argument {
+            return .{ .usize = 0 };
         }
     };
 };
@@ -49,7 +49,7 @@ pub const OptionMap = struct {
     }
 
     // You must make sure that the option exists first
-    fn get(self: OptionMap, char: u8) Option {
+    pub fn get(self: OptionMap, char: u8) Option {
         return self.options[char].?;
     }
 
@@ -97,7 +97,7 @@ pub fn parse(
             break;
         } else if (arg[0] != '-') {
             try ret.operands.append(arg);
-            continue;
+            break;
         }
 
         for (arg[1..]) |char| {
@@ -125,9 +125,9 @@ pub fn parse(
                     .str => |_| ret.options.put(
                         Option{ .flag = char, .argument = .{ .str = next } },
                     ),
-                    .i32 => |_| ret.options.put(
+                    .usize => |_| ret.options.put(
                         Option{ .flag = char, .argument = .{
-                            .i32 = try std.fmt.parseInt(i32, next, 10),
+                            .usize = try std.fmt.parseInt(usize, next, 10),
                         } },
                     ),
                     else => unreachable,
