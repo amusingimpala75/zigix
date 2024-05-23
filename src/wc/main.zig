@@ -16,13 +16,6 @@ const BytesMode = enum {
     neither,
 };
 
-const FileContentsInfo = struct {
-    line_count: usize,
-    word_count: usize,
-    byte_count: usize,
-    is_dir: bool = false,
-};
-
 const Args = struct {
     const FileList = std.ArrayList([]const u8);
 
@@ -74,16 +67,10 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
 
     const count_lines = !args.hasFlags() or args.l;
     const count_words = !args.hasFlags() or args.w;
-    const bytes_mode = if (args.cm == .neither) .bytes else args.cm;
+    const bytes_mode = if (!args.hasFlags() and args.cm == .neither) .bytes else args.cm;
 
     if (args.files.items.len == 0) {
-        var br = std.io.bufferedReader(std.io.getStdIn().reader());
-        const reader = br.reader();
-        const chars = try reader.readAllAlloc(allocator, @as(u32, 1) << 31);
-        defer allocator.free(chars);
-
-        const lines, const words = strInfo(chars);
-        const bytes = chars.len;
+        const lines, const words, const bytes = try stdinInfo(count_lines or count_words);
 
         try printInfo(
             if (count_lines) lines else null,
@@ -102,29 +89,23 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
     var ret: u8 = 0;
 
     for (args.files.items) |file| {
-        const file_contents_info = fileInfo(file, count_lines or bytes_mode == .chars, count_words, bytes_mode != .neither) catch |err| {
-            try io.stdErrPrint("wc: error printing {s}: {!}\n", .{ file, err });
+        const line_count, const word_count, const byte_count = fileInfo(file, count_lines or count_words) catch |err| {
+            switch (err) {
+                error.IsADirectory => try io.stdErrPrint("wc: {s} is a directory\n", .{file}),
+                else => try io.stdErrPrint("wc: error printing {s}: {!}\n", .{ file, err }),
+            }
             ret = 1;
             continue;
         };
 
-        if (file_contents_info.is_dir) {
-            try io.stdErrPrint("wc: {s} is a directory\n", .{file});
-            ret = 1;
-            continue;
-        }
-
-        if (count_lines)
-            sum_lines += file_contents_info.line_count;
-        if (count_words)
-            sum_words += file_contents_info.word_count;
-        if (bytes_mode != .neither)
-            sum_bytes += file_contents_info.byte_count;
+        sum_lines += line_count;
+        sum_words += word_count;
+        sum_bytes += byte_count;
 
         try printInfo(
-            if (count_lines) file_contents_info.line_count else null,
-            if (count_words) file_contents_info.word_count else null,
-            if (bytes_mode != .neither) file_contents_info.byte_count else null,
+            if (count_lines) line_count else null,
+            if (count_words) word_count else null,
+            if (bytes_mode != .neither) byte_count else null,
             file,
         );
     }
@@ -141,38 +122,51 @@ pub fn main(argsIterator: *std.process.ArgIterator, allocator: std.mem.Allocator
     return ret;
 }
 
-fn fileInfo(filename: []const u8, need_lines: bool, need_words: bool, need_bytes: bool) !FileContentsInfo {
+fn fileInfo(filename: []const u8, more_than_just_bytes: bool) !struct { usize, usize, usize } {
     const f = try fs.openFileMaybeAbsolute(filename, .{});
     defer f.close();
 
-    var lines: usize = 0;
-    var words: usize = 0;
-
-    if (need_lines or need_words) {
-        var br = std.io.bufferedReader(f.reader());
-        const reader = br.reader();
-
-        var in_word = false;
-        while (reader.readByte()) |byte| {
-            byteScan(byte, &lines, &words, &in_word);
-        } else |_| {} // EOF
+    const stat = try f.stat();
+    if (stat.kind == .directory) {
+        return error.IsADirectory;
     }
 
-    const stat = try f.stat();
-    const bytes = if (need_bytes) stat.size else 0;
-    return .{ .line_count = lines, .word_count = words, .byte_count = bytes, .is_dir = stat.kind == .directory };
+    if (more_than_just_bytes) {
+        return try readerInfo(f.reader());
+    }
+
+    return .{ 0, 0, stat.size };
 }
 
-fn strInfo(str: []const u8) struct { usize, usize } {
-    var lines: usize = 0;
-    var words: usize = 0;
+fn stdinInfo(more_than_just_bytes: bool) !struct { usize, usize, usize } {
+    const stdin = std.io.getStdIn();
+
+    if (more_than_just_bytes) {
+        return try readerInfo(stdin.reader());
+    } else {
+        return .{ 0, 0, (try stdin.stat()).size };
+    }
+}
+
+fn readerInfo(reader: anytype) !struct { usize, usize, usize } {
+    var br = std.io.bufferedReader(reader);
+    const r = br.reader();
 
     var in_word = false;
-    for (str) |byte| {
+
+    var lines: usize = 0;
+    var words: usize = 0;
+    var bytes: usize = 0;
+
+    while (r.readByte()) |byte| {
         byteScan(byte, &lines, &words, &in_word);
+        bytes += 1;
+    } else |err| switch (err) {
+        error.EndOfStream => {},
+        else => |e| return e,
     }
 
-    return .{ lines, words };
+    return .{ lines, words, bytes };
 }
 
 fn byteScan(byte: u8, lines_counter: *usize, words_counter: *usize, in_word: *bool) void {
