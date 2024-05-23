@@ -46,7 +46,7 @@ const Args = struct {
             .w = parsed_options.options.contains('w'),
             .cm = if (parsed_options.options.contains('m'))
                 .chars
-            else if (parsed_options.options.contains('c'))
+            else if (!parsed_options.options.contains('c'))
                 .neither
             else
                 .bytes,
